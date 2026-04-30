@@ -302,13 +302,15 @@ All efficiency results were measured under a fixed, controlled protocol:
 If you find this work useful, please cite our paper:
 
 ```bibtex
-@article{nirob2025calibrated,
-  title   = {Calibrated ROI-Gated Conditional Computation for High-Throughput and Backbone-Agnostic Brain Tumor MRI Classification},
-  author  = {Nirob, Ashraful Alam and Apon, Sakib and Tahsin, Anika and Alam, Md. Golam Rabiul and Costanzo, Sandra and Fortino, Giancarlo and Hassan, Mohammad Mehedi},
-  journal = {Computer Methods and Programs in Biomedicine},
-  year    = {2025},
-  doi     = {10.1016/j.cmpb.2026.108768},
-  url     = {https://www.sciencedirect.com/science/article/abs/pii/S0169260726001641}
+@article{NIROB2026109409,
+title = {Calibrated ROI-gated conditional computation for high-throughput and backbone-agnostic brain tumor MRI classification},
+journal = {Computer Methods and Programs in Biomedicine},
+pages = {109409},
+year = {2026},
+issn = {0169-2607},
+doi = {https://doi.org/10.1016/j.cmpb.2026.109409},
+url = {https://www.sciencedirect.com/science/article/pii/S0169260726001641},
+author = {Ashraful Alam Nirob and Sakib Apon and Anika Tahsin and Md. Golam Rabiul Alam and Sandra Costanzo and Giancarlo Fortino and Andrea Aliverti and Mohammad Mehedi Hassan}
 }
 ```
 
