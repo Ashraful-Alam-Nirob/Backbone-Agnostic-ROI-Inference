@@ -73,11 +73,17 @@ ece_smoothing = 0.02       # soft-binning smoothness (larger => smoother)
 ece_temperature = 1.0      # for the Soft-ECE loss only (not temp scaling)
 SAVE_CSV  = True
 
-# Paths
-dataset = "T1"
-train_dir = r"/home/nirob/Desktop/Brain tumor mri /dataset/data_split/train/T1"
-val_dir   = r"/home/nirob/Desktop/Brain tumor mri /dataset/data_split/val/T1"
-CKPT_SAVE_PATH = r"/home/nirob/Desktop/Brain tumor mri /checkpoints/t1_final_best_optimized_model.pth"
+# # Paths
+# dataset = "T1"
+# train_dir = r"/home/nirob/Desktop/Brain tumor mri /dataset/data_split/train/T1"
+# val_dir   = r"/home/nirob/Desktop/Brain tumor mri /dataset/data_split/val/T1"
+# CKPT_SAVE_PATH = r"/home/nirob/Desktop/Brain tumor mri /checkpoints/t1_final_best_optimized_model.pth"
+
+# Paths for KAGGLE DATA
+dataset = "MRI"
+train_dir = r"/home/brain_tumor/Backbone-Agnostic-ROI-Inference/data_split/train/MRI"
+val_dir   = r"/home/brain_tumor/Backbone-Agnostic-ROI-Inference/data_split/val/MRI"
+CKPT_SAVE_PATH = r"/home/brain_tumor/Backbone-Agnostic-ROI-Inference/checkpoints/mri_final_best_optimized_model.pth"
 
 # >>> NEW: metrics CSV path <<<
 METRICS_CSV_PATH = str(Path(CKPT_SAVE_PATH).with_name(f"{dataset}_runs_metrics.csv"))
