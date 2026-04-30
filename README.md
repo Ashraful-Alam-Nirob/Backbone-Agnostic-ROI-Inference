@@ -20,7 +20,7 @@
 This repository contains the official implementation of our paper on **Calibrated ROI-Gated Conditional Computation** for brain tumor MRI classification. The framework introduces a trainable, backbone-agnostic efficiency layer that reallocates computation toward diagnostically relevant spatial regions while preserving global image context and calibrated confidence reliability.
 
 <div align="center">
-  <img src="figures/framework_overview.png" alt="Framework Overview" width="850"/>
+  <img src="figures/framework_overview.jpg" alt="Framework Overview" width="850"/>
   <br/>
   <em>Figure 1: Overview of the STN-ROI + EfficientNet-B0 framework with Gated Attention Pooling. A lightweight depthwise-separable ROI predictor estimates K ROI parameters and gate logits; all patches share a single backbone to extract features aggregated via gated attention.</em>
 </div>
@@ -53,7 +53,7 @@ This repository contains the official implementation of our paper on **Calibrate
 ## Architecture
 
 <div align="center">
-  <img src="figures/roi_refinement.png" alt="Progressive ROI Refinement" width="800"/>
+  <img src="figures/roi_refinement.jpg" alt="Progressive ROI Refinement" width="800"/>
   <br/>
   <em>Figure 2: Progressive refinement of ROI selection during training. As training proceeds, selected regions become more consistent and increasingly concentrate on clinically relevant tumor areas.</em>
 </div>
@@ -222,7 +222,7 @@ This runs a TPE-sampler study maximizing `(accuracy, throughput)` and minimizing
 ### Backbone-Agnostic Efficiency Gains (T1 setting)
 
 <div align="center">
-  <img src="figures/accuracy_throughput_tradeoff.png" alt="Accuracy-Throughput Tradeoff" width="700"/>
+  <img src="figures/accuracy_throughput_tradeoff.jpg" alt="Accuracy-Throughput Tradeoff" width="700"/>
   <br/>
   <em>Figure 4: Accuracy–throughput trade-off across SOTA backbones. Circles = raw models; stars = same backbone with proposed framework. Dashed lines highlight the consistent rightward (throughput) shift.</em>
 </div>
@@ -271,7 +271,7 @@ Evaluated on the harmonized Nickparvar + BRISC external corpus (≈5.72× faster
 ## ROC Curves
 
 <div align="center">
-  <img src="figures/roc_curves.png" alt="Multi-class ROC Curves" width="850"/>
+  <img src="figures/roc_curves.jpg" alt="Multi-class ROC Curves" width="850"/>
   <br/>
   <em>Figure 6: Multi-class one-vs-rest ROC curves across MRI modalities (columns: T1, T1C+, T2) and backbones (rows: EfficientNet-B0, Xception41, DenseNet-121).</em>
 </div>
