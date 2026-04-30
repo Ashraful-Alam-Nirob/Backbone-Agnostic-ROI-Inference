@@ -229,22 +229,6 @@ This runs a TPE-sampler study maximizing `(accuracy, throughput)` and minimizing
 
 ---
 
-## Ablation Study
-
-| Variant | Acc ↑ | ECE ↓ | Throughput (img/s) ↑ |
-|---|---|---|---|
-| Raw (Xception41) | 0.9519 ± 0.0091 | 0.0174 ± 0.0292 | 1590 ± 5 |
-| **Proposed (full)** | **0.9725 ± 0.0040** | **0.0100 ± 0.0130** | **3079 ± 25** |
-| − ROI selection | 0.9622 ± 0.0072 | 0.0205 ± 0.0157 | 2217 ± 88 |
-| − Calibration | 0.9691 ± 0.0034 | 0.0535 ± 0.0121 | 3074 ± 2 |
-| − ROI − Calibration | 0.9587 ± 0.0121 | 0.0559 ± 0.0080 | 2003 ± 7 |
-
-**Key takeaways:**
-- **ROI selection** is the primary driver of efficiency (≈1.39× faster than no-ROI variant).
-- **Calibration** has negligible effect on throughput but is critical for confidence reliability — removing it raises ECE from 0.0100 to **0.0535**.
-
----
-
 ## ROI Robustness
 
 <div align="center">
