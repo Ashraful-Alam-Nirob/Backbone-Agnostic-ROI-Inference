@@ -5,6 +5,7 @@ import json
 import random
 import warnings
 from typing import Dict, Optional, List, Tuple
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -26,6 +27,8 @@ from sklearn.metrics import (
 )
 
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -35,38 +38,27 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # CONFIG — EDIT THESE
 # =========================
 
-# Your split folder must look like:
-# ROOT_SPLIT_DIR/
-#   train/T1/<class>/*.png
-#   val/T1/<class>/*.png
-#   test/T1/<class>/*.png
-#   train/T2/...
-#   val/T2/...
-#   test/T2/...
-#   train/T1C+/...
-ROOT_SPLIT_DIR = r"/home/nirob/Desktop/Brain tumor mri /dataset/data_split"
-
-MODALITIES = ["T1", "T2", "T1C+"]  # edit if your folder name differs
+ROOT_SPLIT_DIR = r"/home/brain_tumor/Backbone-Agnostic-ROI-Inference/data_merged"
+MODALITIES = ["MRI"]
+EVAL_TEST = True
 
 # Where to save everything
-OUTPUT_DIR = r"/home/nirob/Desktop/Brain tumor mri /benchmark_outputs_timm_q1"
+OUTPUT_DIR = r"/home/brain_tumor/Backbone-Agnostic-ROI-Inference/benchmark_outputs_with_autovast_on"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # -------------------------
 # MODELS (put your 12 here)
 # -------------------------
 MODEL_IDS = {
-    "Inception-V3": "inception_v3.gluon_in1k",
-    "MobileNetV3-L": "mobilenetv3_large_100.miil_in21k",
-    "VGG-19-BN": "vgg19_bn.tv_in1k",
-    "DenseNet-121": "densenet121.ra_in1k",
-    "Xception41": "xception41.tf_in1k",
-    "VGG-16-BN": "vgg16_bn.tv_in1k",
-    "CoatNet-0": "coatnet_0_rw_224.sw_in1k",
-    "EfficientNet-B0": "efficientnet_b0.ra4_e3600_r224_in1k",
-    "MaxViT-Tiny-256": "maxvit_rmlp_tiny_rw_256.sw_in1k",
-    "ConvNeXtV2-Tiny": "convnextv2_tiny.fcmae",
-    "ConvNeXtV2-Atto": "convnextv2_atto.fcmae",
+    # "Inception-V3": "inception_v3.gluon_in1k",
+    # "MobileNetV3-L": "mobilenetv3_large_100.miil_in21k",
+    # "VGG-19-BN": "vgg19_bn.tv_in1k",
+    # "DenseNet-121": "densenet121.ra_in1k",
+    # "Xception41": "xception41.tf_in1k",
+    # "VGG-16-BN": "vgg16_bn.tv_in1k",
+    # "EfficientNet-B0": "efficientnet_b0.ra4_e3600_r224_in1k",
+    # "ConvNeXtV2-Tiny": "convnextv2_tiny.fcmae",
+    # "ConvNeXtV2-Atto": "convnextv2_atto.fcmae",
     "Swin-T": "swin_tiny_patch4_window7_224.ms_in22k"
 }
 
@@ -87,19 +79,18 @@ USE_AMP_EVAL = True
 USE_AMP_INFER_BENCH = True
 
 # Benchmarking
-WARMUP_BATCHES = 10
+WARMUP_BATCHES = 20
 BENCHMARK_MAX_BATCHES = None  # e.g. 30 to shorten
 
-# Seed (single seed now, easy to extend later)
-SEEDS = [24,48]
+# Seed
+SEEDS = [0,24,48]
 
 # Splits
 EVAL_TEST = False  # requires ROOT_SPLIT_DIR/test/<MODALITY> to exist
 
 # Fair speed/latency comparisons:
-# True => forces all models to same input size
 FORCE_FIXED_IMAGE_SIZE = True
-FIXED_IMAGE_SIZE = 192  # your proposed default
+FIXED_IMAGE_SIZE = 224
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -139,7 +130,6 @@ def basic_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
     }
 
 def macro_auc_ovr(y_true: np.ndarray, y_prob: np.ndarray, num_classes: int) -> Optional[float]:
-    # Can fail if some classes absent in a split; handle safely.
     try:
         y_true_oh = np.eye(num_classes)[y_true]
         auc = roc_auc_score(y_true_oh, y_prob, average="macro", multi_class="ovr")
@@ -245,7 +235,7 @@ def risk_coverage_df(y_true: np.ndarray, y_prob: np.ndarray, num_points: int = 1
     pred = np.argmax(y_prob, axis=1)
     err = (pred != y_true).astype(np.float32)
 
-    order = np.argsort(-conf)  # high conf first
+    order = np.argsort(-conf)
     err_sorted = err[order]
     conf_sorted = conf[order]
 
@@ -295,12 +285,10 @@ def sanitize_name(s: str) -> str:
     return "".join([c if c.isalnum() or c in ("-", "_") else "_" for c in s])
 
 def save_confusion_outputs(cm: np.ndarray, class_names: List[str], out_prefix: str, title: str):
-    # Raw CSV
     cm_df = pd.DataFrame(cm, index=class_names, columns=class_names)
     cm_csv = out_prefix + "_confusion_matrix.csv"
     cm_df.to_csv(cm_csv, index=True)
 
-    # Normalized CSV (row-normalized)
     cm_norm = cm.astype(np.float32)
     row_sum = cm_norm.sum(axis=1, keepdims=True)
     cm_norm = np.divide(cm_norm, np.maximum(row_sum, 1e-12))
@@ -308,7 +296,6 @@ def save_confusion_outputs(cm: np.ndarray, class_names: List[str], out_prefix: s
     cmn_csv = out_prefix + "_confusion_matrix_norm.csv"
     cmn_df.to_csv(cmn_csv, index=True)
 
-    # Heatmap PNG (raw)
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111)
     im = ax.imshow(cm, interpolation="nearest")
@@ -349,7 +336,6 @@ def make_loaders_for_model(
 ):
     cfg = resolve_data_config({}, model=model)
 
-    # Force same input size for fair latency/throughput comparisons
     if FORCE_FIXED_IMAGE_SIZE:
         cfg["input_size"] = (3, FIXED_IMAGE_SIZE, FIXED_IMAGE_SIZE)
 
@@ -359,7 +345,6 @@ def make_loaders_for_model(
     train_set = datasets.ImageFolder(train_dir, transform=train_tfms)
     val_set   = datasets.ImageFolder(val_dir, transform=eval_tfms)
 
-    # Ensure class mapping consistent
     if train_set.classes != val_set.classes:
         raise ValueError(f"Class mismatch train vs val: {train_set.classes} vs {val_set.classes}")
 
@@ -419,10 +404,18 @@ def benchmark_infer(
 ) -> Tuple[float, float]:
     model.eval()
 
+    # ── FIX: match proposed model's channels_last memory format for fair comparison ──
+    if DEVICE == "cuda":
+        model = model.to(memory_format=torch.channels_last)
+
     # warmup
     w = 0
     for xb, _ in loader:
-        xb = xb.to(DEVICE, non_blocking=True)
+        # ── FIX: convert inputs to channels_last to match proposed model ──
+        if DEVICE == "cuda":
+            xb = xb.to(DEVICE, non_blocking=True).to(memory_format=torch.channels_last)
+        else:
+            xb = xb.to(DEVICE, non_blocking=True)
         with torch.cuda.amp.autocast(enabled=(amp and DEVICE == "cuda")):
             out = model(xb)
             if isinstance(out, (tuple, list)):
@@ -439,7 +432,11 @@ def benchmark_infer(
     total_batches = 0
 
     for xb, _ in loader:
-        xb = xb.to(DEVICE, non_blocking=True)
+        # ── FIX: convert inputs to channels_last to match proposed model ──
+        if DEVICE == "cuda":
+            xb = xb.to(DEVICE, non_blocking=True).to(memory_format=torch.channels_last)
+        else:
+            xb = xb.to(DEVICE, non_blocking=True)
 
         if DEVICE == "cuda":
             torch.cuda.synchronize()
@@ -538,18 +535,15 @@ def run_one(
     print("=" * 80)
     print("Outputs:", model_out_dir)
 
-    # Create model
-    model = timm.create_model(timm_id, pretrained=True, num_classes=0)  # create first to resolve cfg
+    model = timm.create_model(timm_id, pretrained=True, num_classes=0)
     model = model.to(DEVICE)
 
-    # Build loaders using model cfg (then re-create model with correct head)
     train_set, val_set, test_set, train_loader, val_loader, test_loader, cfg = make_loaders_for_model(
         model, train_dir, val_dir, test_dir
     )
     class_names = train_set.classes
     num_classes = len(class_names)
 
-    # Re-create with correct head (some models need num_classes at init)
     model = timm.create_model(timm_id, pretrained=True, num_classes=num_classes).to(DEVICE)
 
     meta_path = os.path.join(model_out_dir, f"{run_tag}_meta.json")
@@ -569,6 +563,7 @@ def run_one(
         "use_amp_infer_bench": USE_AMP_INFER_BENCH,
         "force_fixed_image_size": FORCE_FIXED_IMAGE_SIZE,
         "fixed_image_size": FIXED_IMAGE_SIZE if FORCE_FIXED_IMAGE_SIZE else None,
+        "bench_channels_last": True,
         "resolved_cfg": {k: (v if isinstance(v, (int, float, str, bool, list, dict, tuple)) else str(v)) for k, v in cfg.items()},
         "train_dir": train_dir,
         "val_dir": val_dir,
@@ -616,10 +611,8 @@ def run_one(
             "epoch_time_s": float(t1 - t0),
         })
 
-        # Save epoch CSV every epoch
         pd.DataFrame(epoch_rows).to_csv(epoch_csv_path, index=False)
 
-        # Best checkpoint by val_acc (as in your current protocol)
         score = val_met["acc"]
         if score > best_score + 1e-6:
             best_score = score
@@ -639,7 +632,6 @@ def run_one(
                 "state_dict": best_state,
             }, best_ckpt_path)
 
-    # Load best
     if best_state is not None:
         model.load_state_dict(best_state)
 
@@ -649,12 +641,10 @@ def run_one(
     y_true_v, y_pred_v, y_prob_v = eval_model(model, val_loader, amp=USE_AMP_EVAL)
     val_met = compute_all_metrics(y_true_v, y_pred_v, y_prob_v, class_names)
 
-    # Confusion outputs (VAL)
     cm_v = confusion_matrix(y_true_v, y_pred_v)
     prefix_v = os.path.join(model_out_dir, f"{run_tag}_VAL")
     val_cm_csv, val_cmn_csv, val_cm_png = save_confusion_outputs(cm_v, class_names, prefix_v, title="VAL Confusion Matrix")
 
-    # Calibration artifacts (VAL)
     val_arrays_npz = os.path.join(model_out_dir, f"{run_tag}_VAL_arrays.npz")
     save_eval_arrays_npz(val_arrays_npz, y_true_v, y_prob_v, class_names)
 
@@ -720,7 +710,6 @@ def run_one(
         "best_epoch": int(best_epoch),
         "best_by": "val_acc",
 
-        # VAL metrics
         "val_acc": val_met["acc"],
         "val_macro_p": val_met["macro_p"],
         "val_macro_r": val_met["macro_r"],
@@ -732,7 +721,6 @@ def run_one(
         "val_nll": val_met["nll"],
         "val_brier": val_met["brier"],
 
-        # TEST metrics (if available)
         "test_acc": (test_met["acc"] if test_met is not None else np.nan),
         "test_macro_f1": (test_met["macro_f1"] if test_met is not None else np.nan),
         "test_auc_macro_ovr": (test_met["auc_macro_ovr"] if test_met is not None else np.nan),
@@ -740,22 +728,19 @@ def run_one(
         "test_nll": (test_met["nll"] if test_met is not None else np.nan),
         "test_brier": (test_met["brier"] if test_met is not None else np.nan),
 
-        # efficiency
         "params_m": params_m(model),
         "ms_per_img": ms_img,
         "throughput_img_s": thr,
 
-        # protocol flags
         "force_fixed_image_size": FORCE_FIXED_IMAGE_SIZE,
         "fixed_image_size": (FIXED_IMAGE_SIZE if FORCE_FIXED_IMAGE_SIZE else np.nan),
         "use_amp_train": USE_AMP_TRAIN,
         "use_amp_eval": USE_AMP_EVAL,
         "use_amp_infer_bench": USE_AMP_INFER_BENCH,
+        "bench_channels_last": True,  # logged for reproducibility
 
-        # artifact pointers
         "meta_json": meta_path,
         "epoch_log_csv": epoch_csv_path,
-
         "val_confusion_csv": val_cm_csv,
         "val_confusion_norm_csv": val_cmn_csv,
         "val_confusion_png": val_cm_png,
@@ -837,25 +822,21 @@ def main():
                     print(f"\n[ERROR] {modality} | {name} failed: {err}")
                     all_fail.append({"modality": modality, "model": name, "timm_id": mid, "seed": seed, "error": err})
 
-        # Per-modality summary
         modality_csv = os.path.join(OUTPUT_DIR, f"SUMMARY_{sanitize_name(modality)}.csv")
         if all_results:
             dfm = pd.DataFrame([r for r in all_results if r["modality"] == modality])
             if not dfm.empty:
-                # Sort by TEST if available else VAL
                 sort_col = "test_acc" if dfm["test_acc"].notna().any() else "val_acc"
                 dfm = dfm.sort_values(sort_col, ascending=False)
                 dfm.to_csv(modality_csv, index=False)
                 print("\nSaved modality summary CSV:", modality_csv)
 
-    # Global summaries
     if all_results:
         df = pd.DataFrame(all_results)
         global_csv = os.path.join(OUTPUT_DIR, "ALL_RESULTS_GLOBAL.csv")
         df.to_csv(global_csv, index=False)
         print("\nSaved global CSV:", global_csv)
 
-        # Convenience summary: best per modality/model (if multiple seeds later)
         best_csv = os.path.join(OUTPUT_DIR, "BEST_PER_MODEL_MODALITY.csv")
         metric = "test_acc" if df["test_acc"].notna().any() else "val_acc"
         df_best = (
