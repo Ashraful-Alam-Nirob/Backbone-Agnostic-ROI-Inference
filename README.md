@@ -215,7 +215,7 @@ This runs a TPE-sampler study maximizing `(accuracy, throughput)` and minimizing
 | DenseNet-121 | 0.908 ± 0.004 | 0.882 ± 0.009 | 0.042 ± 0.020 | 1.261 | 794.3 |
 | EfficientNet-B0 | 0.927 ± 0.007 | 0.899 ± 0.011 | 0.043 ± 0.009 | 0.767 | 1303.4 |
 | ConvNeXtV2-Atto | 0.862 ± 0.010 | 0.801 ± 0.027 | 0.040 ± 0.003 | 0.523 | 1913.2 |
-| **Proposed** | **0.951 ± 0.021** | **0.937 ± 0.020** | **0.002 ± 0.001** | **0.063** | **15899.5** |
+| **Proposed** | **0.951 ± 0.021** | **0.937 ± 0.020** | **0.002 ± 0.001** | **0.063** | **5206.9** |
 
 > All results averaged over 3 random seeds (0, 24, 48). Inference benchmarked on NVIDIA RTX 3080, batch size = 16.
 
